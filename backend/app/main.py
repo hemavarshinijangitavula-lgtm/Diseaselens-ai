@@ -9,6 +9,7 @@ from app.weather_service import get_weather
 from app.risk_engine import flood_risk
 from app.ml_model import predict_demo_risk
 from app.data_service import SHELTERS, get_demo_alerts
+from app.fire_service import get_fire_hotspots, FirmsConfigError, FirmsProviderError
 
 
 app = FastAPI(title="DisasterLens AI", description="Student disaster monitoring and response prototype", version="1.0.0")
@@ -51,6 +52,26 @@ def risk(latitude: float = 13.5503, longitude: float = 78.5029):
             "notice": "Prototype indicator trained/evaluated on synthetic data. Not an official warning or validated hazard forecast."}
 
 
+
+@app.get("/api/fire/hotspots")
+def fire_hotspots(west: float = 78.0, south: float = 13.0, east: float = 79.0, north: float = 14.0, days: int = 1, source: str = "VIIRS_SNPP_NRT"):
+    """Return NASA FIRMS satellite hotspots for a bounding box and recent days."""
+    if not (-180 <= west < east <= 180 and -90 <= south < north <= 90):
+        raise HTTPException(status_code=400, detail="Invalid bounding box. Require west < east and south < north.")
+    if (east - west) > 30 or (north - south) > 30:
+        raise HTTPException(status_code=400, detail="Bounding box is too large. Maximum span is 30 degrees per axis.")
+    if not 1 <= days <= 5:
+        raise HTTPException(status_code=400, detail="days must be between 1 and 5.")
+    try:
+        rows = get_fire_hotspots(west, south, east, north, days, source)
+        return {"source": "NASA FIRMS", "sensor_source": source, "days": days, "bbox": [west, south, east, north], "count": len(rows), "hotspots": rows, "notice": "Satellite thermal detections are hotspots, not confirmed ground fires. Verify with local authorities."}
+    except FirmsConfigError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    except FirmsProviderError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
 @app.get("/api/incidents")
 def list_incidents():
     db: Session = SessionLocal()
@@ -71,7 +92,8 @@ def incident_dict(x):
 def create_incident(payload: IncidentCreate):
     db = SessionLocal()
     try:
-        item = Incident(**payload.model_dump())
+        payload_data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+        item = Incident(**payload_data)
         db.add(item); db.commit(); db.refresh(item)
         return incident_dict(item)
     finally:

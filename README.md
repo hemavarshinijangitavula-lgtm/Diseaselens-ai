@@ -72,6 +72,7 @@ Open the URL Vite prints (normally http://localhost:5173).
 - `PATCH /api/incidents/{incident_id}/status`
 - `GET /api/shelters`
 - `GET /api/alerts`
+- `GET /api/fire/hotspots?west=78&south=13&east=79&north=14&days=1&source=VIIRS_SNPP_NRT` (NASA FIRMS, requires MAP_KEY)
 
 ## API sample: create incident
 POST `/api/incidents` JSON:
@@ -102,3 +103,24 @@ python -m app.seed_data
 5. Add safe notification integration (SMS/email) with consent, rate limits, delivery logging and escalation rules.
 6. Validate shelter locations, capacity, accessibility and availability with local authorities.
 7. Add tests, model evaluation, privacy controls and deployment configuration.
+
+## Advanced Module 1: NASA FIRMS Satellite Fire Hotspots
+
+### What it does
+Retrieves recent satellite thermal hotspot detections from NASA FIRMS for a bounding box, displays detections on a Leaflet map, and lists brightness, fire radiative power (FRP), confidence, acquisition date/time and satellite when provided by the source. Hotspots are not confirmed ground fires.
+
+### Setup
+1. Request a free NASA FIRMS API MAP_KEY at https://firms.modaps.eosdis.nasa.gov/api/map_key/.
+2. Copy `backend/.env.example` to `backend/.env`.
+3. Set `NASA_FIRMS_MAP_KEY=your_actual_map_key` in that file. Do not commit/share your key.
+4. Install backend dependencies from `backend` with `python -m pip install -r requirements.txt`.
+5. Restart FastAPI.
+6. In the React dashboard, open **Fire Hotspots** and use bounding box, day count, and satellite source filters.
+
+### API
+`GET /api/fire/hotspots?west=78&south=13&east=79&north=14&days=1&source=VIIRS_SNPP_NRT`
+
+Bounding box order: west longitude, south latitude, east longitude, north latitude. This prototype supports 1–5 days (NASA near-real-time area API limit). Sources: VIIRS_SNPP_NRT, VIIRS_NOAA20_NRT, VIIRS_NOAA21_NRT, MODIS_NRT.
+
+### Data disclaimer
+Thermal anomalies can include fires, industrial heat, or other hot targets. Do not use as an official warning or as the sole basis for emergency response. Validate detections with local authorities.

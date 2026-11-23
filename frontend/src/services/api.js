@@ -8,3 +8,6 @@ export const createIncident = (data) => api.post('/incidents', data)
 export const updateIncidentStatus = (id, status) => api.patch(`/incidents/${id}/status`, { status })
 export const fetchShelters = () => api.get('/shelters')
 export const fetchAlerts = () => api.get('/alerts')
+
+export const fetchFireHotspots = (params = {}) => api.get("/fire/hotspots", { params })
+export const fetchHealth = () => api.get("/health")
