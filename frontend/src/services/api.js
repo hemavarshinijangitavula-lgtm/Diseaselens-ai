@@ -1,0 +1,10 @@
+import axios from 'axios'
+export const api = axios.create({ baseURL: 'http://127.0.0.1:8000/api', timeout: 20000 })
+export const fetchSummary = () => api.get('/summary')
+export const fetchWeather = (latitude = 13.5503, longitude = 78.5029) => api.get('/weather', { params: { latitude, longitude } })
+export const fetchRisk = (latitude = 13.5503, longitude = 78.5029) => api.get('/risk', { params: { latitude, longitude } })
+export const fetchIncidents = () => api.get('/incidents')
+export const createIncident = (data) => api.post('/incidents', data)
+export const updateIncidentStatus = (id, status) => api.patch(`/incidents/${id}/status`, { status })
+export const fetchShelters = () => api.get('/shelters')
+export const fetchAlerts = () => api.get('/alerts')
